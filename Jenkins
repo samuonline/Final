@@ -1,0 +1,66 @@
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building the code...'
+                // Tool: Maven
+                sh 'mvn clean package'
+            }
+        }
+        stage('Unit and Integration Tests') {
+            steps {
+                echo 'Running unit and integration tests...'
+                // Tool: JUnit for unit tests and TestNG for integration tests
+                sh 'mvn test'
+            }
+        }
+        stage('Code Analysis') {
+            steps {
+                echo 'Performing code analysis...'
+                // Tool: SonarQube
+                sh 'mvn sonar:sonar'
+            }
+        }
+        stage('Security Scan') {
+            steps {
+                echo 'Performing security scan...'
+                // Tool: SonarQube (with security plugins) or OWASP ZAP
+                sh 'zap.sh -quickurl http://yourapp.com -quickprogress'
+            }
+        }
+        stage('Deploy to Staging') {
+            steps {
+                echo 'Deploying to staging server...'
+                // Tool: AWS CLI
+                sh 'aws s3 cp target/myapp.jar s3://my-bucket/staging/'
+            }
+        }
+        stage('Integration Tests on Staging') {
+            steps {
+                echo 'Running integration tests on staging...'
+                // Tool: Selenium
+                sh 'mvn verify -Pstaging'
+            }
+        }
+        stage('Deploy to Production') {
+            steps {
+                echo 'Deploying to production server...'
+                // Tool: AWS CLI
+                sh 'aws s3 cp target/myapp.jar s3://my-bucket/production/'
+            }
+        }
+    }
+    post {
+        always {
+            // Sending notification email
+            mail to: 'dewumisamuduni@gmail.com',
+                 subject: "Build ${currentBuild.fullDisplayName} - ${currentBuild.result}",
+                 body: "Build status: ${currentBuild.result}\nCheck console output at ${env.BUILD_URL} to view the results."
+        }
+        failure {
+            // Attach logs for failed stages
+            archiveArtifacts artifacts: '**/target/*.log', fingerprint: true
+        }
+    }
+}
